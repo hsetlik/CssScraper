@@ -24,7 +24,7 @@ namespace CssScraper.Style
         public static Regex ElementExp { get { return new Regex(@"^([^\.\s]*+)(?!\.)", RegexOptions.Compiled | RegexOptions.IgnoreCase);}}
         public static Regex AllExp { get { return new Regex(@"\*", RegexOptions.Compiled | RegexOptions.IgnoreCase);}}
     }
-    public abstract class CssSelector
+    public class CssSelector
     {
         public SelectorType SelectorType { get {return SelectorTypeFor(Value);}}
         public string Value { get; set; }

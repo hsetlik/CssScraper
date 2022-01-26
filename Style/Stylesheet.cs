@@ -40,16 +40,14 @@ namespace CssScraper.Style
             return StyleMap.FirstOrDefault(kvp => kvp.Key.Value == selector).Value;
         }
 
-        private string GetCssString()
+        public string GetCssString()
         {
             string output = "";
-            for(var kvp in StyleMap)
+            foreach(var kvp in StyleMap)
             {
                 output += StyleMap.SelectorStyleString(kvp.Key.Value) + "\n";
             }
             return output;
         }
-        //property gets the full text of the stylesheet
-        public CssString {get {return GetCssString();}}
     }
 }
