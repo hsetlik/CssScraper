@@ -11,9 +11,12 @@ namespace CssScraper.Extensions
 {
     public static class HtmlExtensions
     {
-        public static List<Stylesheet> GetStylesheets(string url)
+        public static List<Stylesheet> GetStylesheets(this Uri uri)
         {
-            var watch = System.Diagnostics.Stopwatch.StartNew();
+            return GetStylesheets(uri.AbsoluteUri);
+        }
+        private static List<Stylesheet> GetStylesheets(string url)
+        {
             var downloader = new HttpDownloader(url, null, null);
             var pageString = downloader.GetPage();
             var document = new HtmlDocument();
@@ -27,9 +30,9 @@ namespace CssScraper.Extensions
             {
                 var rel = sheet.GetAttributeValue("href", "no href");
                 rel = Regex.Replace(rel, @"amp;", "");
-                Console.WriteLine($"Stylesheet URL: {urlRoot+ rel}");
+                //Console.WriteLine($"Stylesheet URL: {urlRoot+ rel}");
             }
-            Console.WriteLine($"Root Begins with: {rootLong}");
+            //Console.WriteLine($"Root Begins with: {rootLong}");
             if (!(rootShort == @"http://" || rootLong == @"https://"))
             {
                 string shorter = url.Substring(0, 7);
@@ -43,8 +46,6 @@ namespace CssScraper.Extensions
                 var d = new HttpDownloader(sheetUrl, null, null);
                 output.Add(new Stylesheet(d.GetPage()));
             }
-            watch.Stop();
-            Console.WriteLine($"Getting {sheetUrls.Count} stylesheets took {watch.ElapsedMilliseconds} ms");
             return output;
         }
 
@@ -81,10 +82,15 @@ namespace CssScraper.Extensions
         {
             foreach(var prop in props)
             {
+                if (!node.Attributes.Any(atb => atb.Name == prop.Name))
+                {
+                    Console.WriteLine($"Adding inline property {prop.Name} with value {prop.Value}");
+                }
                 node.SetAttributeValue(prop.Name, prop.Value);
             }
             return node;
         }
+
         public static HtmlDocument WithInlineStylesheets(this HtmlDocument doc, IEnumerable<Stylesheet> sheets)
         {
             var node = doc.DocumentNode;
@@ -93,6 +99,19 @@ namespace CssScraper.Extensions
                 node = node.WithInlineStylesheet(sheet);
             }
             return node.OwnerDocument;
+        }
+
+        public static HtmlDocument LoadPageWithInlineStyles(this Uri uri)
+        {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var d = new HttpDownloader(uri.AbsoluteUri, null, null);
+            var doc = new HtmlDocument();
+            doc.LoadHtml(d.GetPage());
+            var sheets = uri.GetStylesheets();
+            doc = doc.WithInlineStylesheets(sheets);
+            watch.Stop();
+            Console.WriteLine($"Loading page at: {uri.AbsoluteUri} with inline style took {watch.ElapsedMilliseconds} ms");
+            return doc;
         }
     }
 }
