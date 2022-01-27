@@ -35,7 +35,7 @@ namespace CssScraper.Style
             {
                 return Task.Run(() => 
                 {
-                    var selector = new CssSelector(str);
+                    var selector = new CssSelector(str, input.Count() < 20);
                     return new KeyValuePair<CssSelector, List<CssProperty>>(selector, PropsForFullString(str));
                 });
             }).ToList();
@@ -63,7 +63,6 @@ namespace CssScraper.Style
                     foreach(var prop in kvp.Value)
                     {
                         Console.WriteLine($"    {prop.CssValue}");
-
                     }
                 }
             }

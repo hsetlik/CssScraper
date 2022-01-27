@@ -26,15 +26,15 @@ namespace CssScraper.Style
     }
     public static class PropertyExpressions
     {
-        public static Regex PropertyNameExp { get { return new Regex(@"(\S+)(?=\:)", RegexOptions.Compiled | RegexOptions.IgnoreCase);}}
-        public static Regex PropertyValueExp { get { return new Regex(@"(?<=\:\s)(\S[^\;]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);}}
+        public static Regex PropertyNameExp { get { return new Regex(@"([^\n]+)(?=\:)", RegexOptions.Compiled | RegexOptions.IgnoreCase);}}
+        public static Regex PropertyValueExp { get { return new Regex(@"(?<=\:)([^\n]+)(?=\;)", RegexOptions.Compiled | RegexOptions.IgnoreCase);}}
     }
     public class CssProperty
     {
         private string _value = "";
         public string Name { get; set; }
         public string Value { get {return _value;} }
-        public string CssValue {get { return $"{Name}: {Value};\n";}}
+        public string CssValue {get { return $"{Name}: {_value};\n";}}
         public CssProperty()
         {
         }

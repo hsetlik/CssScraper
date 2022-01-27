@@ -34,10 +34,10 @@ namespace CssScraper.Style
         {
         }
 
-        public CssSelector(string input)
+        public CssSelector(string input, bool log=false)
         {
             //Value = input;
-            Value = SelectorTextFor(input);
+            Value = SelectorTextFor(input, log);
             //Console.WriteLine($"Selector value is: {Value}");
         }
         private static SelectorType SelectorTypeFor(string rawValue)
@@ -48,7 +48,7 @@ namespace CssScraper.Style
                 return SelectorType.Class;
             else if (SelectorExpressions.ElementExp.IsMatch(rawValue))
                 return SelectorType.Element;
-            else if (SelectorExpressions.ElementExp.IsMatch(rawValue))
+            else if (SelectorExpressions.AtRuleExp.IsMatch(rawValue))
                 return SelectorType.AtRule;
             else if (SelectorExpressions.ElementWithClassExp.IsMatch(rawValue))
                 return SelectorType.ElementWithClass;
@@ -59,9 +59,13 @@ namespace CssScraper.Style
             return SelectorType.All;
         }
 
-        private static string SelectorTextFor(string rawValue)
+        private static string SelectorTextFor(string rawValue, bool log=false)
         {
             var selType = SelectorTypeFor(rawValue);
+            if (log)
+            {
+                Console.WriteLine($"Selector type for string: {rawValue} is {selType.ToString()}");
+            }
             switch (selType)
             {
                 case SelectorType.Id:
@@ -78,8 +82,10 @@ namespace CssScraper.Style
                     return SelectorExpressions.AtRuleExp.Match(rawValue).Value;
                 case SelectorType.All:
                     return SelectorExpressions.AllExp.Match(rawValue).Value;
+                default:
+                    Console.WriteLine($"No selector type for: {rawValue}");
+                    return "null";
             }
-            return $"Input {rawValue} does not match any selector type!";
         }
         
     }
