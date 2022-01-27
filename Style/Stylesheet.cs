@@ -33,17 +33,13 @@ namespace CssScraper.Style
             var watch = System.Diagnostics.Stopwatch.StartNew();
             
             var selectorStrings = sheetString.Split(@"}").Select(str => str + @"}").ToList();
-            var mapTasks = GetStyleMapTasks(selectorStrings).ToArray();
-            var pairs = Task.WhenAll<KeyValuePair<CssSelector, List<CssProperty>>>(mapTasks).Result.ToList();
+            
             watch.Stop();
-            Console.WriteLine($"Getting {pairs.Count} pairs took {watch.ElapsedMilliseconds} ms");
+            Console.WriteLine($"Splitting string with size {sheetString.Length * sizeof(char)} kb took {watch.ElapsedMilliseconds} ms");
             watch.Restart();
-            Parallel.ForEach(pairs, pair => 
-            {
-                StyleMap[pair.Key] = pair.Value;
-            });
+            StyleMap = selectorStrings.Where(str => CssSelector.IsValidSelector(str)).ToDictionary(str => new CssSelector(str), str => PropsForFullString(str)); 
             watch.Stop();
-            Console.WriteLine($"Parsing into {selectorStrings.Count} parts took {watch.ElapsedMilliseconds} ms-- using Parallel.ForEach");
+            Console.WriteLine($"Parsing into {selectorStrings.Count} selectors took {watch.ElapsedMilliseconds} ms-- using LINQ");
             /*
             if (selectorStrings.Count < 20)
             {
@@ -72,7 +68,7 @@ namespace CssScraper.Style
 
         private static List<Task<KeyValuePair<CssSelector, List<CssProperty>>>> GetStyleMapTasks(IEnumerable<string> input)
         {
-            return input.Select(str => 
+            return input.Where(str => CssSelector.IsValidSelector(str)).Select(str => 
             {
                 return Task.Run(() => 
                 {

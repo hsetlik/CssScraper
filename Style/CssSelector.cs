@@ -60,6 +60,25 @@ namespace CssScraper.Style
             return SelectorType.All;
         }
 
+        public static bool IsValidSelector(string rawValue)
+        {
+            if (SelectorExpressions.IdExp.IsMatch(rawValue))
+                return true;
+            else if (SelectorExpressions.ClassExp.IsMatch(rawValue))
+                return true;
+            else if (SelectorExpressions.ElementExp.IsMatch(rawValue))
+                return true;
+            else if (SelectorExpressions.AtRuleExp.IsMatch(rawValue))
+                return true;
+            else if (SelectorExpressions.ElementWithClassExp.IsMatch(rawValue))
+                return true;
+            else if (SelectorExpressions.ElementListExp.IsMatch(rawValue))
+                return true;
+            else if (SelectorExpressions.AllExp.IsMatch(rawValue))
+                return true;
+            return false;
+        }
+
         private static string SelectorTextFor(string rawValue, bool log=false)
         {
             var selType = SelectorTypeFor(rawValue);
