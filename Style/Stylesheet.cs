@@ -13,9 +13,50 @@ namespace CssScraper.Style
             public static Regex SelectorBodyExp = new Regex(@"(?<=\{)([\s\S]+)(?=\})");
         }
         public SelectorStyleMap StyleMap = new SelectorStyleMap();
+
         public Stylesheet()
         {
 
+        }
+        // Append the content of another stylesheet onto this one. Note that selectors with the same name will be replaced
+        public void Append(Stylesheet sheet)
+        {
+            foreach(var kvp in sheet.StyleMap)
+            {
+                this.StyleMap[kvp.Key] = kvp.Value;
+            }
+        }
+        //Parse the style out of the file's body text
+        public Stylesheet(string sheetString)
+        {
+            //Console.WriteLine($"Sheet value: {sheetString}");
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            
+            var selectorStrings = sheetString.Split(@"}").Select(str => str + @"}").ToList();
+            var mapTasks = GetStyleMapTasks(selectorStrings).ToArray();
+            var pairs = Task.WhenAll<KeyValuePair<CssSelector, List<CssProperty>>>(mapTasks).Result.ToList();
+            watch.Stop();
+            Console.WriteLine($"Getting {pairs.Count} pairs took {watch.ElapsedMilliseconds} ms");
+            watch.Restart();
+            Parallel.ForEach(pairs, pair => 
+            {
+                StyleMap[pair.Key] = pair.Value;
+            });
+            watch.Stop();
+            Console.WriteLine($"Parsing into {selectorStrings.Count} parts took {watch.ElapsedMilliseconds} ms-- using Parallel.ForEach");
+            /*
+            if (selectorStrings.Count < 20)
+            {
+                foreach(var kvp in StyleMap)
+                {
+                    Console.WriteLine($"Selector: {kvp.Key.Value}");
+                    foreach(var prop in kvp.Value)
+                    {
+                        Console.WriteLine($"    {prop.CssValue}");
+                    }
+                }
+            }
+            */
         }
         private static List<CssProperty> PropsForFullString(string input)
         {
@@ -41,32 +82,6 @@ namespace CssScraper.Style
             }).ToList();
         }
 
-        //Parse the style out of the file's body text
-        public Stylesheet(string sheetString)
-        {
-            //Console.WriteLine($"Sheet value: {sheetString}");
-            var watch = System.Diagnostics.Stopwatch.StartNew();
-            var selectorStrings = sheetString.Split(@"}").Select(str => str + @"}").ToList();
-            var mapTasks = GetStyleMapTasks(selectorStrings).ToArray();
-            var pairs = Task.WhenAll<KeyValuePair<CssSelector, List<CssProperty>>>(mapTasks).Result.ToList();
-            foreach(var pair in pairs)
-            {
-                StyleMap[pair.Key] = pair.Value;
-            }
-            watch.Stop();
-            Console.WriteLine($"Parsing into {selectorStrings.Count} parts took {watch.ElapsedMilliseconds} ms");
-            if (selectorStrings.Count < 20)
-            {
-                foreach(var kvp in StyleMap)
-                {
-                    Console.WriteLine($"Selector: {kvp.Key.Value}");
-                    foreach(var prop in kvp.Value)
-                    {
-                        Console.WriteLine($"    {prop.CssValue}");
-                    }
-                }
-            }
-        }
         private static string GetSheetString(string url)
         {
             var d = new HttpDownloader(url, null, null);

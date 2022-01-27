@@ -56,6 +56,7 @@ namespace CssScraper.Style
                 return SelectorType.ElementList;
             else if (SelectorExpressions.AllExp.IsMatch(rawValue))
                 return SelectorType.All;
+            Console.WriteLine($"Warning: No matching selector type for \"{rawValue}\" ");
             return SelectorType.All;
         }
 

@@ -11,6 +11,16 @@ namespace CssScraper.Extensions
 {
     public static class HtmlExtensions
     {
+        public static Stylesheet SheetFromStyleNode(HtmlNode node)
+        {
+            if (node.Name != "style")
+            {
+                Console.WriteLine($"Invalid node name: {node.Name}");
+                return null;
+            }
+            return new Stylesheet(node.InnerText);
+        }
+        
         public static List<Stylesheet> GetStylesheets(this Uri uri)
         {
             return GetStylesheets(uri.AbsoluteUri);
@@ -112,6 +122,28 @@ namespace CssScraper.Extensions
             watch.Stop();
             Console.WriteLine($"Loading page at: {uri.AbsoluteUri} with inline style took {watch.ElapsedMilliseconds} ms");
             return doc;
+        }
+
+        public static IEnumerable<Stylesheet> GetNodeStyles(this HtmlDocument doc)
+        {
+            return doc.DocumentNode.CssSelect("style").Select(n => new Stylesheet(n.InnerText));
+        }
+
+        public static Stylesheet GetMergedNodeStyles(this HtmlDocument doc)
+        {
+            var nodeStyles = doc.GetNodeStyles().ToList();
+            if (nodeStyles.Count < 1)
+            {
+                Console.WriteLine("No style nodes in document");
+                return null;
+            }
+            var output = nodeStyles[0];
+            nodeStyles.RemoveAt(0);
+            foreach (var style in nodeStyles)
+            {
+                output.Append(style);
+            }
+            return output;
         }
     }
 }
