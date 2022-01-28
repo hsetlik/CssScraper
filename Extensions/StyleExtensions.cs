@@ -15,10 +15,7 @@ namespace CssScraper.Style
             var selPair = map.FirstOrDefault(kvp => kvp.Key.Value == selector);
             string output = selPair.Key.Value;
             output += @" {" + '\n';
-            foreach(var prop in selPair.Value)
-            {
-                output += prop.CssValue;
-            }
+            
             output += @"}";
             return output;
         }

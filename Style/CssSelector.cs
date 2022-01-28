@@ -16,6 +16,7 @@ namespace CssScraper.Style
         AtRule,
         All
     }
+    /*
     public static class SelectorExpressions
     {
         public static Regex IdExp = new Regex(@"^(#[^\{]+)");
@@ -26,10 +27,21 @@ namespace CssScraper.Style
         public static Regex AllExp = new Regex(@"\*");
         public static Regex AtRuleExp = new Regex(@"(@[^\n]+)(?=\{)");
     }
+    */
     public class CssSelector
     {
-        public SelectorType SelectorType { get {return SelectorTypeFor(Value);}}
-        public string Value { get; set; }
+        public static Dictionary<SelectorType, string> SelectorPatterns = new Dictionary<SelectorType, string>
+        {
+            {SelectorType.Id, @"^(#[^\{]+)"},
+            {SelectorType.Class, @"^(\.[^\{]+)"},
+            {SelectorType.ElementWithClass, @"^[\w\.]+(?=\.)[^\{]+"}, //good
+            {SelectorType.Element, @"^(?!#)(?!@)[^,\.*#]+(?=\{)"}, //good
+            {SelectorType.AtRule, @"(@[^\n\{]+)(?=\{)"}, //good
+            {SelectorType.ElementList, @"^(?!@+)[^\n]+\,([^\n]+)(?=\{)"}, //good
+            {SelectorType.All, @"\*"}, //good
+        };
+        public SelectorType SelectorType { get {return SelectorTypeFor(Value + @"{");}}
+        public string Value { get; private set; }
         public CssSelector()
         {
         }
@@ -37,75 +49,31 @@ namespace CssScraper.Style
         public CssSelector(string input, bool log=false)
         {
             //Value = input;
+
             Value = SelectorTextFor(input, log);
-            //Console.WriteLine($"Selector value is: {Value}");
+
         }
         private static SelectorType SelectorTypeFor(string rawValue)
         {
-            if (SelectorExpressions.IdExp.IsMatch(rawValue))
-                return SelectorType.Id;
-            else if (SelectorExpressions.ClassExp.IsMatch(rawValue))
-                return SelectorType.Class;
-            else if (SelectorExpressions.ElementExp.IsMatch(rawValue))
-                return SelectorType.Element;
-            else if (SelectorExpressions.AtRuleExp.IsMatch(rawValue))
-                return SelectorType.AtRule;
-            else if (SelectorExpressions.ElementWithClassExp.IsMatch(rawValue))
-                return SelectorType.ElementWithClass;
-            else if (SelectorExpressions.ElementListExp.IsMatch(rawValue))
-                return SelectorType.ElementList;
-            else if (SelectorExpressions.AllExp.IsMatch(rawValue))
-                return SelectorType.All;
-            Console.WriteLine($"Warning: No matching selector type for \"{rawValue}\" ");
-            return SelectorType.All;
+            return SelectorPatterns.FirstOrDefault(kvp => Regex.IsMatch(rawValue, kvp.Value, RegexOptions.Compiled)).Key;
         }
 
         public static bool IsValidSelector(string rawValue)
         {
-            if (SelectorExpressions.IdExp.IsMatch(rawValue))
-                return true;
-            else if (SelectorExpressions.ClassExp.IsMatch(rawValue))
-                return true;
-            else if (SelectorExpressions.ElementExp.IsMatch(rawValue))
-                return true;
-            else if (SelectorExpressions.AtRuleExp.IsMatch(rawValue))
-                return true;
-            else if (SelectorExpressions.ElementWithClassExp.IsMatch(rawValue))
-                return true;
-            else if (SelectorExpressions.ElementListExp.IsMatch(rawValue))
-                return true;
-            else if (SelectorExpressions.AllExp.IsMatch(rawValue))
-                return true;
-            return false;
+           return SelectorPatterns.Any(kvp => Regex.IsMatch(rawValue, kvp.Value, RegexOptions.Compiled)); 
         }
 
         private static string SelectorTextFor(string rawValue, bool log=false)
         {
-            var selType = SelectorTypeFor(rawValue);
+            var pair = SelectorPatterns.FirstOrDefault(kvp => Regex.IsMatch(rawValue, kvp.Value, RegexOptions.Compiled));
+            var output = Regex.Match(rawValue, pair.Value, RegexOptions.Compiled).Value;
             if (log)
             {
-                Console.WriteLine($"Selector type for string: {rawValue} is {selType.ToString()}");
+                var str = (rawValue.Length > 20) ? rawValue.Substring(0, 20) + "..." : rawValue;
+                Console.WriteLine($"String {str}\nUsing pattern: {pair.Value}");
+                Console.WriteLine($"Output string is: {output} \n");
             }
-            switch (selType)
-            {
-                case SelectorType.Id:
-                    return SelectorExpressions.IdExp.Match(rawValue).Value;
-                case SelectorType.Class:
-                    return SelectorExpressions.ClassExp.Match(rawValue).Value;
-                case SelectorType.Element:
-                    return SelectorExpressions.ElementExp.Match(rawValue).Value;
-                case SelectorType.ElementWithClass:
-                    return SelectorExpressions.ElementWithClassExp.Match(rawValue).Value;               
-                case SelectorType.ElementList:
-                    return SelectorExpressions.ElementListExp.Match(rawValue).Value;              
-                case SelectorType.AtRule:
-                    return SelectorExpressions.AtRuleExp.Match(rawValue).Value;
-                case SelectorType.All:
-                    return SelectorExpressions.AllExp.Match(rawValue).Value;
-                default:
-                    Console.WriteLine($"No selector type for: {rawValue}");
-                    return "null";
-            }
+            return output;
         }
         
     }

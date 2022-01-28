@@ -24,13 +24,10 @@ namespace CssScraper.Style
         vmax,
         percent
     }
-    public static class PropertyExpressions
-    {
-        public static Regex PropertyNameExp { get { return new Regex(@"([^\n]+)(?=\:)", RegexOptions.Compiled | RegexOptions.IgnoreCase);}}
-        public static Regex PropertyValueExp { get { return new Regex(@"(?<=\:)([^\n]+)(?=\;)", RegexOptions.Compiled | RegexOptions.IgnoreCase);}}
-    }
     public class CssProperty
     {
+        public static string PropNamePattern = @"([^\n]+)(?=\:)"; 
+        public static string PropValuePattern = @"(?<=\:)([^\n]+)(?=\;)";
         public string Name { get; set; }
         public string Value { get; set;  }
         public string CssValue {get { return $"{Name}: {Value};\n";}}
@@ -40,8 +37,8 @@ namespace CssScraper.Style
 
         public CssProperty(string inputStr)
         {
-            Name = PropertyExpressions.PropertyNameExp.Match(inputStr).Value;
-            Value = PropertyExpressions.PropertyValueExp.Match(inputStr).Value;
+            Name = Regex.Match(inputStr, PropNamePattern, RegexOptions.Compiled).Value;
+            Value = Regex.Match(inputStr, PropValuePattern, RegexOptions.Compiled).Value;
         }
 
         

@@ -8,10 +8,7 @@ namespace CssScraper.Style
     using SelectorStyleMap = Dictionary<CssSelector, List<CssProperty>>;
     public class Stylesheet
     {
-        public static class StylesheetRegex
-        {
-            public static Regex SelectorBodyExp = new Regex(@"(?<=\{)([\s\S]+)(?=\})");
-        }
+        public static string SelectorBodyPattern = @"(?<=\{)([\s\S]+)(?=})";
         public SelectorStyleMap StyleMap = new SelectorStyleMap();
 
         public Stylesheet()
@@ -31,51 +28,25 @@ namespace CssScraper.Style
         {
             //Console.WriteLine($"Sheet value: {sheetString}");
             var watch = System.Diagnostics.Stopwatch.StartNew();
-            
-            var selectorStrings = sheetString.Split(@"}").Select(str => str + @"}").ToList();
-            
+            var selectorStrings = sheetString.Split(@"}").Select(str => str + @"}");
+            bool shouldLog = selectorStrings.Count() <= 20;
+            StyleMap = selectorStrings.Where(str => CssSelector.IsValidSelector(str)).ToDictionary(str => new CssSelector(str, shouldLog), str => PropsForFullString(str)); 
             watch.Stop();
-            Console.WriteLine($"Splitting string with size {sheetString.Length * sizeof(char)} kb took {watch.ElapsedMilliseconds} ms");
-            watch.Restart();
-            StyleMap = selectorStrings.Where(str => CssSelector.IsValidSelector(str)).ToDictionary(str => new CssSelector(str), str => PropsForFullString(str)); 
-            watch.Stop();
-            Console.WriteLine($"Parsing into {selectorStrings.Count} selectors took {watch.ElapsedMilliseconds} ms-- using LINQ");
-            /*
-            if (selectorStrings.Count < 20)
+            Console.WriteLine($"Parsing stylesheet into {StyleMap.Count} selectors took {watch.ElapsedMilliseconds} ms-- using LINQ");
+            if (shouldLog)
             {
-                foreach(var kvp in StyleMap)
+                foreach(var sel in StyleMap.Keys)
                 {
-                    Console.WriteLine($"Selector: {kvp.Key.Value}");
-                    foreach(var prop in kvp.Value)
-                    {
-                        Console.WriteLine($"    {prop.CssValue}");
-                    }
+                    var selStr = (sel.Value.Length < 20) ? sel.Value : sel.Value.Substring(0, 20) + "...";
+                    Console.WriteLine($"Selector: {selStr} Type: {sel.SelectorType}");
                 }
             }
-            */
         }
         private static List<CssProperty> PropsForFullString(string input)
         {
-            var output = new List<CssProperty>();
-            string propsBody = StylesheetRegex.SelectorBodyExp.Match(input).Value;
-            var props = propsBody.Split(@";").Select(str => str + @";").ToList();
-            Parallel.ForEach(props, prop =>
-            {
-                output.Add(new CssProperty(prop));
-            });
-            return output;
-        }
-
-        private static List<Task<KeyValuePair<CssSelector, List<CssProperty>>>> GetStyleMapTasks(IEnumerable<string> input)
-        {
-            return input.Where(str => CssSelector.IsValidSelector(str)).Select(str => 
-            {
-                return Task.Run(() => 
-                {
-                    var selector = new CssSelector(str, input.Count() < 20);
-                    return new KeyValuePair<CssSelector, List<CssProperty>>(selector, PropsForFullString(str));
-                });
-            }).ToList();
+            string propsBody = Regex.Match(input, SelectorBodyPattern, RegexOptions.Compiled).Value;
+            var props = propsBody.Split(@";").Select(str => str + @";");
+            return props.Select(p => new CssProperty(p)).ToList();
         }
 
         private static string GetSheetString(string url)

@@ -63,14 +63,9 @@ namespace CssScraper.Extensions
         {
             if (selector.SelectorType == SelectorType.ElementList)
             {
-                var exp = new Regex(@"([^\s\,]+)");
-                var matches = exp.Matches(selector.Value).ToList();
-                var output = new List<HtmlNode>();
-                foreach(var match in matches)
-                {
-                    output.AddRange(node.CssSelect(match.Value));
-                }
-                return output;
+                var pattern = @"([^\s\,]+)";
+                var matches = Regex.Matches(selector.Value, pattern, RegexOptions.Compiled);
+                return matches.SelectMany(m => node.CssSelect(m.Value));
             }
             return node.CssSelect(selector.Value);
         }
@@ -136,6 +131,7 @@ namespace CssScraper.Extensions
             {
                 Console.WriteLine("No style nodes in document");
                 return null;
+                
             }
             var output = nodeStyles[0];
             nodeStyles.RemoveAt(0);
