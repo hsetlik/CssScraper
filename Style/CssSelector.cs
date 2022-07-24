@@ -30,15 +30,16 @@ namespace CssScraper.Style
     */
     public class CssSelector
     {
-        public static Dictionary<SelectorType, string> SelectorPatterns = new Dictionary<SelectorType, string>
+        public static string SelectorPattern = @"^[^\{]+";
+        public static IEnumerable<(SelectorType type, string pattern)> SelectorPatterns = new List<(SelectorType type, string pattern)>
         {
-            {SelectorType.Id, @"^(#[^\{]+)"},
-            {SelectorType.Class, @"^(\.[^\{]+)"},
-            {SelectorType.ElementWithClass, @"^[\w\.]+(?=\.)[^\{]+"}, //good
-            {SelectorType.Element, @"^(?!#)(?!@)[^,\.*#]+(?=\{)"}, //good
-            {SelectorType.AtRule, @"(@[^\n\{]+)(?=\{)"}, //good
-            {SelectorType.ElementList, @"^(?!@+)[^\n]+\,([^\n]+)(?=\{)"}, //good
-            {SelectorType.All, @"\*"}, //good
+            (SelectorType.Id, @"^(#[^\{]+)"),
+            (SelectorType.Class, @"^(\.[^\{]+)"),
+            (SelectorType.ElementWithClass, @"^[\w\.]+(?=\.)[^\{]+"), //good
+            (SelectorType.Element, @"^(?!#)(?!@)[^,\.*#]+(?=\{)"), //good
+            (SelectorType.AtRule, @"(@[^\n\{]+)(?=\{)"), //good
+            (SelectorType.ElementList, @"^(?!@+)[^\n]+\,([^\n]+)(?=\{)"), //good
+            (SelectorType.All, @"\*") //good
         };
         public SelectorType SelectorType { get {return SelectorTypeFor(Value + @"{");}}
         public string Value { get; private set; }
@@ -50,27 +51,27 @@ namespace CssScraper.Style
         {
             //Value = input;
 
-            Value = SelectorTextFor(input, log);
+            Value = Regex.Match(input, SelectorPattern, RegexOptions.Compiled).Value;
 
         }
         private static SelectorType SelectorTypeFor(string rawValue)
         {
-            return SelectorPatterns.FirstOrDefault(kvp => Regex.IsMatch(rawValue, kvp.Value, RegexOptions.Compiled)).Key;
+            return SelectorPatterns.FirstOrDefault(kvp => Regex.IsMatch(rawValue, kvp.pattern, RegexOptions.Compiled)).type;
         }
 
         public static bool IsValidSelector(string rawValue)
         {
-           return SelectorPatterns.Any(kvp => Regex.IsMatch(rawValue, kvp.Value, RegexOptions.Compiled)); 
+           return SelectorPatterns.Any(kvp => Regex.IsMatch(rawValue, kvp.pattern, RegexOptions.Compiled)); 
         }
 
         private static string SelectorTextFor(string rawValue, bool log=false)
         {
-            var pair = SelectorPatterns.FirstOrDefault(kvp => Regex.IsMatch(rawValue, kvp.Value, RegexOptions.Compiled));
-            var output = Regex.Match(rawValue, pair.Value, RegexOptions.Compiled).Value;
+            var pair = SelectorPatterns.FirstOrDefault(kvp => Regex.IsMatch(rawValue, kvp.pattern, RegexOptions.Compiled));
+            var output = Regex.Match(rawValue, pair.pattern, RegexOptions.Compiled).Value;
             if (log)
             {
                 var str = (rawValue.Length > 20) ? rawValue.Substring(0, 20) + "..." : rawValue;
-                Console.WriteLine($"String {str}\nUsing pattern: {pair.Value}");
+                Console.WriteLine($"String {str}\nUsing pattern: {pair.pattern}");
                 Console.WriteLine($"Output string is: {output} \n");
             }
             return output;

@@ -7,6 +7,7 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Net.Http;
 
 namespace CssScraper
 {
@@ -29,20 +30,24 @@ namespace CssScraper
 
     public string GetPage()
     {
-        HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Url);
-        if (!string.IsNullOrEmpty(_referer))
-            request.Referer = _referer;
-        if (!string.IsNullOrEmpty(_userAgent))
-            request.UserAgent = _userAgent;
-
-        request.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip,deflate");
-
-        using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+        var client = new HttpClient();
+        HttpResponseMessage message = null;
+        
+        string output = "";
+        try
         {
-            Headers = response.Headers;
-            Url = response.ResponseUri;
-            return ProcessContent(response);
+            Task.Run(async () => 
+            {
+                message = await client.GetAsync(Url);
+                message.EnsureSuccessStatusCode();
+                output = await message.Content.ReadAsStringAsync();
+            });
         }
+        catch (Exception exc)
+        {
+            Console.WriteLine($"Page hit exception: {exc.Message}");
+        }
+        return output;
 
     }
 

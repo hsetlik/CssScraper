@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using ScrapySharp.Extensions;
+
 namespace CssScraper.Style
 {
     using SelectorStyleMap = Dictionary<CssSelector, List<CssProperty>>;
@@ -30,7 +32,7 @@ namespace CssScraper.Style
             var watch = System.Diagnostics.Stopwatch.StartNew();
             var selectorStrings = sheetString.Split(@"}").Select(str => str + @"}");
             bool shouldLog = selectorStrings.Count() <= 20;
-            StyleMap = selectorStrings.Where(str => CssSelector.IsValidSelector(str)).ToDictionary(str => new CssSelector(str, shouldLog), str => PropsForFullString(str)); 
+            StyleMap = selectorStrings.Where(str => CssSelector.IsValidSelector(str)).ToDictionary(str => new CssSelector(str, shouldLog), str => PropsForFullString(str, shouldLog)); 
             watch.Stop();
             Console.WriteLine($"Parsing stylesheet into {StyleMap.Count} selectors took {watch.ElapsedMilliseconds} ms-- using LINQ");
             if (shouldLog)
@@ -42,15 +44,28 @@ namespace CssScraper.Style
                 }
             }
         }
-        private static List<CssProperty> PropsForFullString(string input)
+        private static List<CssProperty> PropsForFullString(string input, bool log=false)
         {
             string propsBody = Regex.Match(input, SelectorBodyPattern, RegexOptions.Compiled).Value;
-            var props = propsBody.Split(@";").Select(str => str + @";");
-            return props.Select(p => new CssProperty(p)).ToList();
+            var output = propsBody
+                .Split(@";")
+                .Select(str => str + @";")
+                .Select(p => new CssProperty(p))
+                .ToList();
+            if (log)
+            {
+                Console.WriteLine($"Raw properties section: {propsBody} \n");
+                foreach(var prop in output)
+                {
+                    Console.WriteLine($"Property CSS: {prop.CssValue}");
+                }
+            }
+            return output;
         }
 
         private static string GetSheetString(string url)
         {
+            Console.WriteLine($"Getting string for URL: {url}");
             var d = new HttpDownloader(url, null, null);
             var output = d.GetPage();
             Console.WriteLine($"Sheet at URL {url} has size {(output.Length * sizeof(char)) / 1000} kb");
